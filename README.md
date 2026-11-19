@@ -16,7 +16,7 @@ Shared base for headless Goose agents in the [AI-native SDLC platform](https://g
 docker build --platform linux/amd64 -t agent-base:dev .
 docker run --rm --network none --platform linux/amd64 agent-base:dev sh /usr/local/bin/agent-image-smoke-test
 docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 - < scripts/check-runtime-config.py
-docker run --rm -i --network none --platform linux/amd64 agent-base:dev sh -s < scripts/check-entrypoint.sh
+docker run --rm -i --network none --platform linux/amd64 -v "$PWD/scripts/fake-token-broker.js:/tmp/fake-token-broker.js:ro" agent-base:dev sh -s < scripts/check-entrypoint.sh
 ```
 
 - The first check exercises the toolchain, runtime permissions and recipe validation.

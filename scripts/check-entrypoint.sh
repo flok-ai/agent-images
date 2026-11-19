@@ -21,25 +21,11 @@ export AGENT_SECRETS_DIR="$check_dir/missing"
 AI_GATEWAY_API_KEY=existing /usr/local/bin/agent-entrypoint sh -eu -c 'test "$AI_GATEWAY_API_KEY" = existing'
 GH_TOKEN=existing /usr/local/bin/agent-entrypoint sh -eu -c 'test "$GH_TOKEN" = existing'
 
-# Fake token broker on loopback: the projected token selects the answer.
-cat > "$check_dir/broker.js" <<'BROKER'
-const http = require('http');
-const fs = require('fs');
-const server = http.createServer((req, res) => {
-  const auth = req.headers.authorization;
-  res.setHeader('content-type', 'application/json');
-  if (req.method === 'POST' && auth === 'Bearer good-projected') {
-    res.end(JSON.stringify({ token: 'broker-token', expiresAt: '2099-01-01T00:00:00Z' }));
-  } else if (req.method === 'POST' && auth === 'Bearer garbage-projected') {
-    res.end('not json');
-  } else {
-    res.statusCode = 403;
-    res.end(JSON.stringify({ error: { code: 'leaky-body' } }));
-  }
-});
-server.listen(0, '127.0.0.1', () => fs.writeFileSync(process.argv[2], String(server.address().port)));
-BROKER
-node "$check_dir/broker.js" "$check_dir/port" &
+# Fake token broker on loopback (scripts/fake-token-broker.js, bind-mounted
+# read-only because this check is piped in and the file is not in the image).
+broker_js=${FAKE_BROKER_JS:-/tmp/fake-token-broker.js}
+test -r "$broker_js" || { echo "Missing $broker_js: mount scripts/fake-token-broker.js" >&2; exit 1; }
+node "$broker_js" "$check_dir/port" &
 broker_pid=$!
 for _ in $(seq 50); do [ -s "$check_dir/port" ] && break; sleep 0.1; done
 test -s "$check_dir/port"
