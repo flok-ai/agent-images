@@ -16,7 +16,7 @@ Shared base for headless Goose agents in the [AI-native SDLC platform](https://g
 docker build --platform linux/amd64 -t agent-base:dev .
 docker run --rm --network none --platform linux/amd64 agent-base:dev sh /usr/local/bin/agent-image-smoke-test
 docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 - < scripts/check-runtime-config.py
-docker run --rm -i --network none --platform linux/amd64 agent-base:dev sh -s < scripts/check-entrypoint.sh
+docker run --rm -i --network none --platform linux/amd64 -v "$PWD/scripts/stub-token-broker.js:/tmp/stub-token-broker.js:ro" agent-base:dev sh -s < scripts/check-entrypoint.sh
 ```
 
 - The first check exercises the toolchain, runtime permissions and recipe validation.
@@ -70,6 +70,7 @@ The current AMD64 image measures **0.956 GB** uncompressed. Build measurements a
 | 2026-10-22 GitHub-only demo | Remove GitLab CLI from installation and smoke checks; this demo only needs GitHub. |
 | 2026-10-22 remaining defaults | Python 3.12 with venv/uv, TypeScript/tsx and GPG. Keys arrive at runtime. Role skills/task recipes are deferred; ship only an optional smoke recipe. |
 | 2026-11-10 issue #7 | Load optional CSI files at startup; keep credentials out of image layers and use a fresh private GPG home to select only the mounted signing key. |
+| 2026-11-19 issue #10 | Get the GitHub token from the token broker (`GH_TOKEN_BROKER_URL`) using the projected ServiceAccount token. The broker takes precedence; the mounted PAT path stays for one release so this can merge before the workflow switches, then is removed. MVP: no retry or refresh, since installation tokens outlast an agent step. |
 
 ## Publishing
 
@@ -87,6 +88,15 @@ The entrypoint reads optional files from `AGENT_SECRETS_DIR` (default `/mnt/agen
 
 The workflow supplies `GIT_USER_NAME` and `GIT_USER_EMAIL`; each nonempty value sets the corresponding global Git identity. `$HOME` must be writable. Provider/model selection remains in `GOOSE_PROVIDER` and `GOOSE_MODEL`. Secrets and signing state are runtime-only; do not persist the runtime home into an image.
 
-CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key and a verified signed commit, with networking disabled. It does not verify CSI delivery or real GitHub authentication.
+### GitHub token broker
+
+| Variable | Purpose |
+|---|---|
+| `GH_TOKEN_BROKER_URL` | When set, the entrypoint `POST`s to this URL with the projected ServiceAccount token as a bearer token (`curl`, 30-second timeout), exports the returned `token` as `GH_TOKEN` and configures the GitHub HTTPS credential helper. |
+| `GH_TOKEN_BROKER_TOKEN_PATH` | Projected token file. Default `/var/run/secrets/broker/token`. |
+
+The broker takes precedence: when `GH_TOKEN_BROKER_URL` is set, `julieio-goose-github-pat` is ignored. When it is unset, the PAT behavior above is unchanged. A missing token file, a non-`200` answer or an unparsable response prints one fixed line with the HTTP status only and exits non-zero; tokens and response bodies are never printed. There is no retry or refresh: installation tokens last one hour, longer than an agent step. See the [token broker reference](https://github.com/julie-ng/ai-native-sdlc/blob/main/architecture/reference/token-broker.md).
+
+CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key, a verified signed commit and a stub token broker on loopback (success, non-`200`, unparsable response, missing token file, variable unset), with networking disabled. It does not verify CSI delivery, projected-token mounting, the real broker or real GitHub authentication.
 
 Local verification (2026-11-10): AMD64 build, entrypoint signing check, default shell/UID and offline provider routing passed on an ARM64 host. The full smoke check stopped at `uv --version` with a QEMU signal 11; native AMD64 CI validation remains unverified.
