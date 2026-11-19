@@ -6,7 +6,41 @@ if [ -f "$secrets_dir/vercel-ai-gateway-api-key" ]; then
   AI_GATEWAY_API_KEY=$(cat "$secrets_dir/vercel-ai-gateway-api-key")
   export AI_GATEWAY_API_KEY
 fi
-if [ -f "$secrets_dir/julieio-goose-github-pat" ]; then
+if [ -n "${GH_TOKEN_BROKER_URL:-}" ]; then
+  # Broker takes precedence; the mounted PAT is ignored. Output stays fixed
+  # text: never print tokens, the URL or the response body.
+  broker_token_file=${GH_TOKEN_BROKER_TOKEN_PATH:-/var/run/secrets/broker/token}
+  if [ ! -r "$broker_token_file" ]; then
+    echo 'GitHub token broker: projected token file not readable' >&2
+    exit 1
+  fi
+  previous_umask=$(umask)
+  umask 077
+  broker_response=$(mktemp)
+  umask "$previous_umask"
+  # The header comes from stdin so the projected token never reaches argv.
+  broker_status=$({ printf 'Authorization: Bearer '; cat "$broker_token_file"; printf '\n'; } |
+    curl -s --max-time 30 -X POST -H @- -o "$broker_response" -w '%{http_code}' \
+      "$GH_TOKEN_BROKER_URL" 2>/dev/null) || broker_status=000
+  if [ "$broker_status" != 200 ]; then
+    rm -f "$broker_response"
+    echo "GitHub token broker request failed (HTTP $broker_status)" >&2
+    exit 1
+  fi
+  broker_token=$(node -e '
+    const t = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).token;
+    if (typeof t !== "string" || t === "") process.exit(1);
+    process.stdout.write(t);
+  ' "$broker_response" 2>/dev/null) || broker_token=
+  rm -f "$broker_response"
+  if [ -z "$broker_token" ]; then
+    echo "GitHub token broker returned an unparsable response (HTTP $broker_status)" >&2
+    exit 1
+  fi
+  GH_TOKEN=$broker_token
+  export GH_TOKEN
+  gh auth setup-git --hostname github.com
+elif [ -f "$secrets_dir/julieio-goose-github-pat" ]; then
   GH_TOKEN=$(cat "$secrets_dir/julieio-goose-github-pat")
   export GH_TOKEN
   # Explicit hostname keeps setup offline; the helper reads GH_TOKEN at use time.
