@@ -70,6 +70,7 @@ The current AMD64 image measures **0.956 GB** uncompressed. Build measurements a
 | 2026-10-22 GitHub-only demo | Remove GitLab CLI from installation and smoke checks; this demo only needs GitHub. |
 | 2026-10-22 remaining defaults | Python 3.12 with venv/uv, TypeScript/tsx and GPG. Keys arrive at runtime. Role skills/task recipes are deferred; ship only an optional smoke recipe. |
 | 2026-11-10 issue #7 | Load optional CSI files at startup; keep credentials out of image layers and use a fresh private GPG home to select only the mounted signing key. |
+| 2026-11-19 issue #10 | Get the GitHub token from the token broker (`GH_TOKEN_BROKER_URL`) using the projected ServiceAccount token, and drop the mounted PAT path. MVP: no retry or refresh, since installation tokens outlast an agent step. |
 
 ## Publishing
 
