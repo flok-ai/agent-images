@@ -1,7 +1,11 @@
-// Fake GitHub token broker for scripts/check-entrypoint.sh. Listens on loopback
-// and writes its port to the file named by argv[2]. The projected (bearer)
-// token selects the answer: good -> 200 with a token, garbage -> 200 with a
-// non-JSON body, anything else -> 403 with an error body.
+// Test stub for the GitHub token broker. It exists only so that
+// scripts/check-entrypoint.sh can test the entrypoint code (the curl call,
+// status handling, JSON parsing and credential setup) offline. It is not the
+// real broker: it validates nothing and returns canned responses.
+//
+// Listens on loopback and writes its port to the file named by argv[2]. The
+// projected (bearer) token selects the answer: good -> 200 with a token,
+// garbage -> 200 with a non-JSON body, anything else -> 403 with an error body.
 const http = require('http');
 const fs = require('fs');
 

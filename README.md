@@ -16,7 +16,7 @@ Shared base for headless Goose agents in the [AI-native SDLC platform](https://g
 docker build --platform linux/amd64 -t agent-base:dev .
 docker run --rm --network none --platform linux/amd64 agent-base:dev sh /usr/local/bin/agent-image-smoke-test
 docker run --rm -i --network none --platform linux/amd64 agent-base:dev python3 - < scripts/check-runtime-config.py
-docker run --rm -i --network none --platform linux/amd64 -v "$PWD/scripts/fake-token-broker.js:/tmp/fake-token-broker.js:ro" agent-base:dev sh -s < scripts/check-entrypoint.sh
+docker run --rm -i --network none --platform linux/amd64 -v "$PWD/scripts/stub-token-broker.js:/tmp/stub-token-broker.js:ro" agent-base:dev sh -s < scripts/check-entrypoint.sh
 ```
 
 - The first check exercises the toolchain, runtime permissions and recipe validation.
@@ -96,6 +96,6 @@ The workflow supplies `GIT_USER_NAME` and `GIT_USER_EMAIL`; each nonempty value 
 
 The broker is the only GitHub credential mechanism: no PAT is mounted or read. When `GH_TOKEN_BROKER_URL` is unset, the entrypoint leaves `GH_TOKEN` and Git credentials untouched. A missing token file, a non-`200` answer or an unparsable response prints one fixed line with the HTTP status only and exits non-zero; tokens and response bodies are never printed. There is no retry or refresh: installation tokens last one hour, longer than an agent step. See the [token broker reference](https://github.com/julie-ng/ai-native-sdlc/blob/main/architecture/reference/token-broker.md).
 
-CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, a generated throwaway signing key, a verified signed commit and a fake token broker on loopback (success, non-`200`, unparsable response, missing token file, variable unset), with networking disabled. It does not verify CSI delivery, projected-token mounting, the real broker or real GitHub authentication.
+CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, a generated throwaway signing key, a verified signed commit and a stub token broker on loopback (success, non-`200`, unparsable response, missing token file, variable unset), with networking disabled. It does not verify CSI delivery, projected-token mounting, the real broker or real GitHub authentication.
 
 Local verification (2026-11-10): AMD64 build, entrypoint signing check, default shell/UID and offline provider routing passed on an ARM64 host. The full smoke check stopped at `uv --version` with a QEMU signal 11; native AMD64 CI validation remains unverified.

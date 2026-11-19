@@ -21,10 +21,11 @@ export AGENT_SECRETS_DIR="$check_dir/missing"
 AI_GATEWAY_API_KEY=existing /usr/local/bin/agent-entrypoint sh -eu -c 'test "$AI_GATEWAY_API_KEY" = existing'
 GH_TOKEN=existing /usr/local/bin/agent-entrypoint sh -eu -c 'test "$GH_TOKEN" = existing'
 
-# Fake token broker on loopback (scripts/fake-token-broker.js, bind-mounted
-# read-only because this check is piped in and the file is not in the image).
-broker_js=${FAKE_BROKER_JS:-/tmp/fake-token-broker.js}
-test -r "$broker_js" || { echo "Missing $broker_js: mount scripts/fake-token-broker.js" >&2; exit 1; }
+# Stub token broker on loopback, used only to test the entrypoint code
+# (scripts/stub-token-broker.js). It is bind-mounted read-only because this
+# check is piped in and the file is not in the image.
+broker_js=${STUB_BROKER_JS:-/tmp/stub-token-broker.js}
+test -r "$broker_js" || { echo "Missing $broker_js: mount scripts/stub-token-broker.js" >&2; exit 1; }
 node "$broker_js" "$check_dir/port" &
 broker_pid=$!
 for _ in $(seq 50); do [ -s "$check_dir/port" ] && break; sleep 0.1; done
@@ -82,4 +83,4 @@ printf %s garbage-projected > "$check_dir/broker-token"
 broker_fail 'unparsable response'
 rg -q 'HTTP 200' "$check_dir/error"
 GH_TOKEN_BROKER_TOKEN_PATH="$check_dir/absent" broker_fail 'missing token file'
-echo 'Entrypoint checks passed (fake secrets, offline signed commit, fake token broker).'
+echo 'Entrypoint checks passed (fake secrets, offline signed commit, stub token broker).'
