@@ -11,7 +11,7 @@ Project-specific instructions for any agent working in this repository, alongsid
 - Deployment target: `linux/amd64`, including when building on an ARM64 development machine. Runtime user: `goose`, UID 1000.
 - GitHub-only demo: use `gh`; do not add GitLab tooling.
 - Python and Node belong in the shared base; exact versions and additional tools are implementation defaults to document, not permanent architecture decisions.
-- Platform design and ADRs live in [ai-native-sdlc](https://github.com/julie-ng/ai-native-sdlc/tree/main/architecture). This repository owns image implementation and measured findings. Flag conflicts rather than silently choosing.
+- The [flok](https://github.com/flok-ai) platform design and ADRs live in the [architecture directory](https://github.com/flok-ai/flok/tree/main/architecture). This repository owns image implementation and measured findings. Flag conflicts rather than silently choosing.
 
 ## Working mode and reading order
 
