@@ -71,6 +71,7 @@ The current AMD64 image measures **0.956 GB** uncompressed. Build measurements a
 | 2026-10-22 remaining defaults | Python 3.12 with venv/uv, TypeScript/tsx and GPG. Keys arrive at runtime. Role skills/task recipes are deferred; ship only an optional smoke recipe. |
 | 2026-11-10 issue #7 | Load optional CSI files at startup; keep credentials out of image layers and use a fresh private GPG home to select only the mounted signing key. |
 | 2026-11-19 issue #10 | Get the GitHub token from the token broker (`GH_TOKEN_BROKER_URL`) using the projected ServiceAccount token. The broker takes precedence; the mounted PAT path stays for one release so this can merge before the workflow switches, then is removed. MVP: no retry or refresh, since installation tokens outlast an agent step. |
+| 2026-11-20 issue #12 | Remove mounted GitHub PAT support after the workflow switched to the broker and the infrastructure removed the PAT mount. |
 
 ## Publishing
 
@@ -83,7 +84,6 @@ The entrypoint reads optional files from `AGENT_SECRETS_DIR` (default `/mnt/agen
 | File | Runtime setup |
 |---|---|
 | `vercel-ai-gateway-api-key` | Exports `AI_GATEWAY_API_KEY`. |
-| `julieio-goose-github-pat` | Exports `GH_TOKEN`; configures the GitHub HTTPS credential helper without storing the token. |
 | `agent-gpg-private-key` | Imports an unencrypted ASCII-armored private key into a fresh private `GNUPGHOME` under `$HOME`; sets global Git signing fingerprint and enables commit signing. Invalid keys fail startup. |
 
 The workflow supplies `GIT_USER_NAME` and `GIT_USER_EMAIL`; each nonempty value sets the corresponding global Git identity. `$HOME` must be writable. Provider/model selection remains in `GOOSE_PROVIDER` and `GOOSE_MODEL`. Secrets and signing state are runtime-only; do not persist the runtime home into an image.
@@ -95,7 +95,7 @@ The workflow supplies `GIT_USER_NAME` and `GIT_USER_EMAIL`; each nonempty value 
 | `GH_TOKEN_BROKER_URL` | When set, the entrypoint `POST`s to this URL with the projected ServiceAccount token as a bearer token (`curl`, 30-second timeout), exports the returned `token` as `GH_TOKEN` and configures the GitHub HTTPS credential helper. |
 | `GH_TOKEN_BROKER_TOKEN_PATH` | Projected token file. Default `/var/run/secrets/broker/token`. |
 
-The broker takes precedence: when `GH_TOKEN_BROKER_URL` is set, `julieio-goose-github-pat` is ignored. When it is unset, the PAT behavior above is unchanged. A missing token file, a non-`200` answer or an unparsable response prints one fixed line with the HTTP status only and exits non-zero; tokens and response bodies are never printed. There is no retry or refresh: installation tokens last one hour, longer than an agent step. See the [token broker reference](https://github.com/julie-ng/ai-native-sdlc/blob/main/architecture/reference/token-broker.md).
+With `GH_TOKEN_BROKER_URL` unset, the entrypoint leaves any existing `GH_TOKEN` in place and skips GitHub credential helper setup. A missing token file, a non-`200` answer or an unparsable response prints one fixed line with the HTTP status only and exits non-zero; tokens and response bodies are never printed. There is no retry or refresh: installation tokens last one hour, longer than an agent step. See the [token broker reference](https://github.com/julie-ng/ai-native-sdlc/blob/main/architecture/reference/token-broker.md).
 
 CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key, a verified signed commit and a stub token broker on loopback (success, non-`200`, unparsable response, missing token file, variable unset), with networking disabled. It does not verify CSI delivery, projected-token mounting, the real broker or real GitHub authentication.
 

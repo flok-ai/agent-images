@@ -7,8 +7,7 @@ if [ -f "$secrets_dir/vercel-ai-gateway-api-key" ]; then
   export AI_GATEWAY_API_KEY
 fi
 if [ -n "${GH_TOKEN_BROKER_URL:-}" ]; then
-  # Broker takes precedence; the mounted PAT is ignored. Output stays fixed
-  # text: never print tokens, the URL or the response body.
+  # Keep output fixed: never print tokens, the URL or the response body.
   broker_token_file=${GH_TOKEN_BROKER_TOKEN_PATH:-/var/run/secrets/broker/token}
   if [ ! -r "$broker_token_file" ]; then
     echo 'GitHub token broker: projected token file not readable' >&2
@@ -39,11 +38,6 @@ if [ -n "${GH_TOKEN_BROKER_URL:-}" ]; then
   fi
   GH_TOKEN=$broker_token
   export GH_TOKEN
-  gh auth setup-git --hostname github.com
-elif [ -f "$secrets_dir/julieio-goose-github-pat" ]; then
-  GH_TOKEN=$(cat "$secrets_dir/julieio-goose-github-pat")
-  export GH_TOKEN
-  # Explicit hostname keeps setup offline; the helper reads GH_TOKEN at use time.
   gh auth setup-git --hostname github.com
 fi
 
