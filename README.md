@@ -100,3 +100,9 @@ With `GH_TOKEN_BROKER_URL` unset, the entrypoint leaves any existing `GH_TOKEN` 
 CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key, a verified signed commit and a stub token broker on loopback (success, non-`200`, unparsable response, missing token file, variable unset), with networking disabled. It does not verify CSI delivery, projected-token mounting, the real broker or real GitHub authentication.
 
 Local verification (2026-11-10): AMD64 build, entrypoint signing check, default shell/UID and offline provider routing passed on an ARM64 host. The full smoke check stopped at `uv --version` with a QEMU signal 11; native AMD64 CI validation remains unverified.
+
+## License
+
+[flok](https://github.com/flok-ai) agent images is licensed under the [GNU Affero General Public License v3.0 only](./LICENSE) (AGPL-3.0-only). Copies, modified versions and network deployments must keep the attribution described in [NOTICE](./NOTICE).
+
+Versions up to and including v0.1.0 were released under the MIT License.
