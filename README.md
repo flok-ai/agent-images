@@ -1,6 +1,6 @@
 # Agent images
 
-Shared base for headless Goose agents in the [AI-native SDLC platform](https://github.com/julie-ng/ai-native-sdlc). Contributors: read [AGENTS.md](AGENTS.md).
+Shared base for headless Goose agents in the [flok](https://github.com/flok-ai). Contributors: read [AGENTS.md](AGENTS.md).
 
 - **Image:** `agent-base`; registry/organization prefix and publishing workflow remain to be chosen.
 - **Base:** official Goose on Debian 12. [ADR-001](architecture/decisions/001-agent-base-image.md) records the choice and historical size comparison.
@@ -95,7 +95,7 @@ The workflow supplies `GIT_USER_NAME` and `GIT_USER_EMAIL`; each nonempty value 
 | `GH_TOKEN_BROKER_URL` | When set, the entrypoint `POST`s to this URL with the projected ServiceAccount token as a bearer token (`curl`, 30-second timeout), exports the returned `token` as `GH_TOKEN` and configures the GitHub HTTPS credential helper. |
 | `GH_TOKEN_BROKER_TOKEN_PATH` | Projected token file. Default `/var/run/secrets/broker/token`. |
 
-With `GH_TOKEN_BROKER_URL` unset, the entrypoint leaves any existing `GH_TOKEN` in place and skips GitHub credential helper setup. A missing token file, a non-`200` answer or an unparsable response prints one fixed line with the HTTP status only and exits non-zero; tokens and response bodies are never printed. There is no retry or refresh: installation tokens last one hour, longer than an agent step. See the [token broker reference](https://github.com/julie-ng/ai-native-sdlc/blob/main/architecture/reference/token-broker.md).
+With `GH_TOKEN_BROKER_URL` unset, the entrypoint leaves any existing `GH_TOKEN` in place and skips GitHub credential helper setup. A missing token file, a non-`200` answer or an unparsable response prints one fixed line with the HTTP status only and exits non-zero; tokens and response bodies are never printed. There is no retry or refresh: installation tokens last one hour, longer than an agent step. See the [token broker reference](https://github.com/flok-ai/flok/blob/main/architecture/reference/token-broker.md).
 
 CI runs the entrypoint check from the checkout via stdin; it exercises missing secrets, environment preservation, fake mounted credentials, a generated throwaway signing key, a verified signed commit and a stub token broker on loopback (success, non-`200`, unparsable response, missing token file, variable unset), with networking disabled. It does not verify CSI delivery, projected-token mounting, the real broker or real GitHub authentication.
 
