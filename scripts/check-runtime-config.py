@@ -6,7 +6,8 @@ server accepts only a synthetic key and asserts the runtime-selected model.
 import http.server
 import json
 import os
-import subprocess
+# This smoke test intentionally launches the Goose CLI.
+import subprocess  # nosec B404
 import threading
 
 requests = []
@@ -51,8 +52,9 @@ env = dict(os.environ, GOOSE_PROVIDER="openai", GOOSE_MODEL="offline-test-model"
            OPENAI_HOST=f"http://127.0.0.1:{server.server_port}",
            GOOSE_TELEMETRY_ENABLED="false", GOOSE_MODE="auto")
 try:
-    result = subprocess.run(
-        ["goose", "run", "--text", "Reply RUNTIME_CONFIG_OK", "--max-turns", "1"],
+    # Launch Goose with fixed arguments to test routing against the loopback mock.
+    result = subprocess.run(  # nosec B603
+        ["/usr/local/bin/goose", "run", "--text", "Reply RUNTIME_CONFIG_OK", "--max-turns", "1"],
         env=env, text=True, capture_output=True, timeout=60,
     )
     print(result.stdout)
