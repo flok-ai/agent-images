@@ -40,6 +40,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         }).encode())
 
     def log_message(self, *args):
+        # S1186: This override is intentionally empty to suppress mock request logs.
         pass
 
 
