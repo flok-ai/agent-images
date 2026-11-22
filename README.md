@@ -1,5 +1,7 @@
 # Agent images
 
+[![Maintainability](https://qlty.sh/gh/flok-ai/projects/agent-images/maintainability.svg)](https://qlty.sh/gh/flok-ai/projects/agent-images)
+
 Shared base for headless Goose agents in the [flok](https://github.com/flok-ai). Contributors: read [AGENTS.md](AGENTS.md).
 
 - **Image:** `agent-base`; registry/organization prefix and publishing workflow remain to be chosen.
