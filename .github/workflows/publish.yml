@@ -5,8 +5,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: publish-agent-base
@@ -25,6 +24,8 @@ jobs:
       AZURE_ACR_NAME: ${{ vars.AZURE_ACR_NAME }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Build AMD64 image
         run: docker build --platform linux/amd64 -t agent-base:check .
       - name: Check runtime
