@@ -44,7 +44,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 config = os.path.expanduser("~/.config/goose/config.yaml")
-# The CI smoke test runs Python without optimization so assertions stay active.
+# Suppress B101 in this smoke test because CI runs Python without optimization,
+# so all assertions execute and fail the test if an expectation is unmet.
 assert not os.path.exists(config), "test must start without config.yaml"  # nosec B101
 server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
