@@ -40,7 +40,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         }).encode())
 
     def log_message(self, *args):
-        # Suppress request logs to keep the smoke test output focused on Goose.
+        # S1186: This override is intentionally empty to suppress mock request logs.
         pass
 
 
