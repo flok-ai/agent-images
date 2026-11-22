@@ -6,7 +6,8 @@ server accepts only a synthetic key and asserts the runtime-selected model.
 import http.server
 import json
 import os
-import subprocess
+# This smoke test intentionally launches the Goose CLI.
+import subprocess  # nosec B404
 import threading
 
 requests = []
@@ -43,7 +44,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 config = os.path.expanduser("~/.config/goose/config.yaml")
-assert not os.path.exists(config), "test must start without config.yaml"
+# Suppress B101 in this smoke test because CI runs Python without optimization,
+# so all assertions execute and fail the test if an expectation is unmet.
+assert not os.path.exists(config), "test must start without config.yaml"  # nosec B101
 server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 env = dict(os.environ, GOOSE_PROVIDER="openai", GOOSE_MODEL="offline-test-model",
@@ -51,19 +54,20 @@ env = dict(os.environ, GOOSE_PROVIDER="openai", GOOSE_MODEL="offline-test-model"
            OPENAI_HOST=f"http://127.0.0.1:{server.server_port}",
            GOOSE_TELEMETRY_ENABLED="false", GOOSE_MODE="auto")
 try:
-    result = subprocess.run(
-        ["goose", "run", "--text", "Reply RUNTIME_CONFIG_OK", "--max-turns", "1"],
+    # Launch Goose with fixed arguments to test routing against the loopback mock.
+    result = subprocess.run(  # nosec B603
+        ["/usr/local/bin/goose", "run", "--text", "Reply RUNTIME_CONFIG_OK", "--max-turns", "1"],
         env=env, text=True, capture_output=True, timeout=60,
     )
     print(result.stdout)
     print(result.stderr)
-    assert result.returncode == 0, result.returncode
-    assert requests, "no request reached the runtime-selected endpoint"
+    assert result.returncode == 0, result.returncode  # nosec B101
+    assert requests, "no request reached the runtime-selected endpoint"  # nosec B101
     for path, auth, body in requests:
-        assert path == "/v1/chat/completions", path
-        assert auth == "Bearer offline-synthetic-key"
-        assert body["model"] == "offline-test-model", body["model"]
-    assert "RUNTIME_CONFIG_OK" in result.stdout
+        assert path == "/v1/chat/completions", path  # nosec B101
+        assert auth == "Bearer offline-synthetic-key"  # nosec B101
+        assert body["model"] == "offline-test-model", body["model"]  # nosec B101
+    assert "RUNTIME_CONFIG_OK" in result.stdout  # nosec B101
     print("Runtime-only provider/model routing: PASS (offline mock; no real model).")
 finally:
     server.shutdown()
